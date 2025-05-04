@@ -1,0 +1,100 @@
+version: '3.8'
+
+services:
+  nginx:
+    container_name: nginx
+    image: nginx:latest
+    volumes:
+      - ./app:/var/www/html
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/log:/var/log/nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - php
+    networks:
+      - app-network
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+  php:
+    container_name: php-fpm
+    build:
+      context: ./php
+      dockerfile: php-fpm
+    volumes:
+      - ./app:/var/www/html
+      - ./php/fpm/log:/var/log/php
+      - ./php/fpm/conf:/usr/local/etc
+    environment:
+      - TZ=Asia/Shanghai
+    cap_add:
+      - SYS_PTRACE
+    networks:
+      - app-network
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+  queue:
+    container_name: php-queue
+    build:
+      context: ./php
+      dockerfile: php-cli
+    volumes:
+      - ./app:/var/www/html
+      - ./php/queue/log:/var/log/php
+      - ./php/queue/conf:/usr/local/etc
+      - ./php/supervisor/conf.d:/etc/supervisor/conf.d
+    environment:
+      - TZ=Asia/Shanghai
+    cap_add:
+      - SYS_PTRACE
+    networks:
+      - app-network
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+  mysql:
+    container_name: mysql
+    image: mysql:8.0
+    volumes:
+      - ./mysql/data:/var/lib/mysql
+      # - ./mysql/my.conf:/etc/mysql/my.conf
+      - ./mysql/conf.d:/etc/mysql/conf.d
+    environment:
+      TZ: Asia/Shanghai
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: test
+      MYSQL_USER: test
+      MYSQL_PASSWORD: 123456
+    ports:
+      - "3306:3306"
+    networks:
+      - app-network
+    restart: unless-stopped
+  redis:
+    container_name: redis
+    image: redis:latest
+    volumes:
+      - ./redis/data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+    ports:
+      - "6379:6379"
+    networks:
+      - app-network
+    restart: unless-stopped
+
+networks:
+  app-network:
+
