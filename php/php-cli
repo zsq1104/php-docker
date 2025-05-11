@@ -1,5 +1,8 @@
 FROM php:8.1-cli
 
+# 指定工作目录
+WORKDIR /var/www/html
+
 # 替换为阿里云镜像源（国内用户推荐）
 RUN { \
     echo "deb http://mirrors.aliyun.com/debian/ bookworm main"; \
